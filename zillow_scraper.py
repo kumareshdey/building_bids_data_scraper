@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-from setup import proxied_request, log, retry
+from setup import MySQLConnection, clean_monetary_string, proxied_request, log, retry
 
 @retry(max_retry_count=2, interval_sec=5)
 def get_zestimate(address: str):
@@ -39,3 +39,29 @@ def get_zestimate(address: str):
 
     log.warning('Zestimate not found after checking potential parent elements')
     raise Exception()
+
+
+def update_database(row):
+    try:
+        with MySQLConnection() as cursor:
+            update_query = """
+            UPDATE auction_data
+            SET zestimate = %s, v_o = %s
+            WHERE auction_id = %s;
+            """
+            cursor.execute(update_query, (row["zestimate"], row["v_o"], row["auction_id"]))
+    except Exception as e:
+        log.error(f"Error updating database: {e}")
+
+
+def zillow_crawler(df):
+    for _, row in df.iterrows():
+        zestimate = get_zestimate(row['address'])
+        zestimate = clean_monetary_string(zestimate)
+        if row["debt"] and zestimate:
+            v_o = row["debt"] / zestimate
+        else:
+            v_o = None
+        row["zestimate"] = zestimate
+        row["v_o"] = v_o
+        update_database(row)

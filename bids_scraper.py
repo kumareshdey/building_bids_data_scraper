@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import time
 
 from bs4 import BeautifulSoup
-from setup import MySQLConnection, get_driver, log, proxied_request, retry
+from setup import MySQLConnection, clean_monetary_string, get_driver, log, proxied_request, retry
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -25,6 +25,7 @@ def fetch_existing_auction_ids():
         log.info(f"Fetched {len(result)} auction IDs within the last 24 hours.")
         return {row[0] for row in result}
 
+@retry(max_retry_count=1, interval_sec=5)
 def fetch_other_values(auction_id):
     url = f"https://www.bid4assets.com/auction/index/{auction_id}"
     log.info(f"Fetching debt value from {url}")
@@ -81,7 +82,7 @@ def fetch_bids_data(url):
             for row in rows:
                 cols = row.find_elements(By.TAG_NAME, 'td')
                 auction_id = cols[id_index].text.strip()
-                if auction_id in existing_auction_ids:
+                if int(auction_id) in existing_auction_ids:
                     log.info(f"Auction ID {auction_id} already exists in the database. Stopping scrape.")
                     stop_scraping = True
                     break
@@ -91,7 +92,7 @@ def fetch_bids_data(url):
                 current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 address_split = address.split(' ')
                 city, state = address_split[-3], address_split[-2]
-                data.append([auction_id, address, current_bid, debt, county, city, state, current_date])
+                data.append([auction_id, address, clean_monetary_string(current_bid), clean_monetary_string(debt), county, city, state, current_date])
             log.info(f"Rows length after this page {len(data)}")
             if stop_scraping:
                 break
@@ -109,7 +110,6 @@ def fetch_bids_data(url):
                 break
     
     page_data = pd.DataFrame(data, columns=['auction_id', 'address', 'current_bid', 'debt', 'county', 'city', 'state', 'date'])
-    print(page_data)
     log.info(f"Scraped {len(data)} rows of data.")
     return page_data
 

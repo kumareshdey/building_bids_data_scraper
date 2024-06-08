@@ -1,5 +1,6 @@
 from logging import config
 import logging
+import re
 from selenium import webdriver
 from contextlib import contextmanager
 from selenium.webdriver.common.by import By
@@ -130,3 +131,9 @@ def configure_get_log():
 
 
 log = configure_get_log()
+
+def clean_monetary_string(value_str):
+    cleaned_str = re.sub(r'[^\d.]', '', value_str)
+    if not cleaned_str:
+        return None
+    return float(cleaned_str)
