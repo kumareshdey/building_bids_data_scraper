@@ -34,7 +34,8 @@ def get_driver():
     # chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     # chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-    # chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--window-size=1920,1080")
     # chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration (useful for headless mode)
     # chrome_options.add_argument("--no-sandbox")  # Bypass OS security model (useful for Docker)
     # chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems

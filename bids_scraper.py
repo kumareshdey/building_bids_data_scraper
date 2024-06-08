@@ -96,7 +96,6 @@ def fetch_bids_data(url):
             if stop_scraping:
                 break
             try:
-                next_button = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'button[title="Go to the next page"]')))
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 next_button = driver.find_element(By.CSS_SELECTOR, 'button[title="Go to the next page"]')
                 if next_button.get_attribute("aria-disabled") == "true":
