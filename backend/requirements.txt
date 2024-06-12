@@ -1,0 +1,7 @@
+pandas
+pymysql
+selenium
+bs4
+requests
+fastapi 
+uvicorn 
