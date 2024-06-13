@@ -1,6 +1,7 @@
 from logging import config
 import logging
 import re
+import traceback
 from selenium import webdriver
 from contextlib import contextmanager
 from selenium.webdriver.common.by import By
@@ -82,6 +83,7 @@ def retry(max_retry_count, interval_sec):
                 except Exception as e:
                     retry_count += 1
                     log.error(f'{func.__name__} failed on attempt {retry_count}: {str(e)}')
+                    log.error(traceback.format_exc())  # Log the traceback
                     if retry_count < max_retry_count:
                         log.info(f'Retrying {func.__name__} in {interval_sec} seconds...')
                         time.sleep(interval_sec)
@@ -133,7 +135,11 @@ def configure_get_log():
 log = configure_get_log()
 
 def clean_monetary_string(value_str):
-    cleaned_str = re.sub(r'[^\d.]', '', value_str)
-    if not cleaned_str:
+    try:
+        cleaned_str = re.sub(r'[^\d.]', '', value_str)
+        if not cleaned_str:
+            return None
+        return float(cleaned_str)
+    except Exception as e:
+        log.error(f"Error cleaning monetary string: {e}. value = {value_str}")
         return None
-    return float(cleaned_str)

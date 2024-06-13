@@ -134,9 +134,9 @@ export default function EnhancedTable() {
   const [count, setCount] = React.useState(15);
   const fetchCount = async () => {
     try {
-      const response = await fetch('http://54.167.54.88/count'); // Replace with your endpoint
+      const response = await fetch('http://54.167.54.88/auctions/count'); // Replace with your endpoint
       const data = await response.json();
-      setCount(data.count);
+      setCount(data.total_count);
     } catch (error) {
       console.error('Error fetching count:', error);
     }

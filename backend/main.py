@@ -1,4 +1,5 @@
 
+import pandas as pd
 from bids_scraper import fetch_bids_data
 from zillow_scraper import zillow_crawler
 from setup import MySQLConnection, log
@@ -10,10 +11,9 @@ urls = ["https://www.bid4assets.com/philaforeclosures",
 ]
 
 
-def save_bids_data(df, cursor: MySQLConnection):
+def save_bids_data(df):
     log.info("Saving data to the database.")
     with MySQLConnection() as cursor:
-
         insert_query = """
             INSERT INTO auction_data (auction_id, address, current_bid, debt, county, city, state, date)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
@@ -27,13 +27,12 @@ def save_bids_data(df, cursor: MySQLConnection):
 
     log.info("Data saving complete.")
     return True
-
-for url in urls:
-    try:
-        df = fetch_bids_data(url)
-        if not df.empty:
-            with MySQLConnection() as cursor:
-                save_bids_data(df, cursor)
-        zillow_crawler(df)
-    except Exception as e:
-        log.error(f"An error occurred while processing {url}: {e}")
+if __name__ == "__main__":
+    for url in urls:
+        try:
+            df = fetch_bids_data(url)
+            if not df.empty:
+                save_bids_data(df)
+            zillow_crawler(df)
+        except Exception as e:
+            log.error(f"An error occurred while processing {url}: {e}")

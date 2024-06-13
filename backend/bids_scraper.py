@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException
 import pandas as pd
+import numpy as np
 
 
 def fetch_existing_auction_ids():
@@ -94,8 +95,8 @@ def fetch_bids_data(url):
                 city, state = address_split[-3], address_split[-2]
                 data.append([auction_id, address, clean_monetary_string(current_bid), clean_monetary_string(debt), county, city, state, current_date])
             log.info(f"Rows length after this page {len(data)}")
-            if stop_scraping:
-                break
+            # if stop_scraping:
+            break
             try:
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 next_button = driver.find_element(By.CSS_SELECTOR, 'button[title="Go to the next page"]')
@@ -110,6 +111,7 @@ def fetch_bids_data(url):
                 break
     
     page_data = pd.DataFrame(data, columns=['auction_id', 'address', 'current_bid', 'debt', 'county', 'city', 'state', 'date'])
+    page_data = page_data.replace({np.nan: None})
     log.info(f"Scraped {len(data)} rows of data.")
     return page_data
 
