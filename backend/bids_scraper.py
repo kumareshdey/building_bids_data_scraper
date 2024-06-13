@@ -95,8 +95,8 @@ def fetch_bids_data(url):
                 city, state = address_split[-3], address_split[-2]
                 data.append([auction_id, address, clean_monetary_string(current_bid), clean_monetary_string(debt), county, city, state, current_date])
             log.info(f"Rows length after this page {len(data)}")
-            # if stop_scraping:
-            break
+            if stop_scraping:
+                break
             try:
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 next_button = driver.find_element(By.CSS_SELECTOR, 'button[title="Go to the next page"]')

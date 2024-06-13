@@ -4,9 +4,7 @@ from bids_scraper import fetch_bids_data
 from zillow_scraper import zillow_crawler
 from setup import MySQLConnection, log
 
-urls = ["https://www.bid4assets.com/philaforeclosures",
-        "https://www.bid4assets.com/SchuylkillSheriffSales",
-        "https://www.bid4assets.com/chestercopasheriffsales",
+urls = ["https://www.bid4assets.com/chestercopasheriffsales",
         "https://www.bid4assets.com/MontcoPASheriff"
 ]
 

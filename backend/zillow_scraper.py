@@ -33,7 +33,7 @@ def get_zestimate(address: str):
 
     if not prices:
         log.error('Neither "Zestimate" nor "Est. " found in the HTML content')
-        save_html(response.text, f"{url}.html")
+        save_html(response.text, f"""{address.replace(" ", "-").replace("/", "-")}.html""")
         raise Exception()
 
     for price in prices:
@@ -48,7 +48,7 @@ def get_zestimate(address: str):
                 return zestimate
 
     log.warning('Zestimate not found after checking potential parent elements')
-    save_html(response.text, f"{url}.html")
+    save_html(response.text, f"""{address.replace(" ", "-").replace("/", "-")}.html""")
     raise Exception()
 
 
@@ -70,7 +70,7 @@ def zillow_crawler(df):
         zestimate = get_zestimate(row['address'])
         zestimate = clean_monetary_string(zestimate)
         if row["debt"] and zestimate:
-            v_o = row["debt"] / zestimate
+            v_o = zestimate/row["debt"]
         else:
             v_o = None
         row["zestimate"] = zestimate
