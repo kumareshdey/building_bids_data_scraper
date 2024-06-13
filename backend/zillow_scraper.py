@@ -1,3 +1,4 @@
+import os
 import re
 import time
 from typing import List
@@ -6,6 +7,14 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 from setup import MySQLConnection, clean_monetary_string, proxied_request, log, retry
+
+def save_html(content, file_name):
+    file_path = os.path.join('html', file_name)
+    try:
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+    except Exception as e:
+        pass
 
 @retry(max_retry_count=2, interval_sec=5)
 def get_zestimate(address: str):
@@ -24,6 +33,7 @@ def get_zestimate(address: str):
 
     if not prices:
         log.error('Neither "Zestimate" nor "Est. " found in the HTML content')
+        save_html(response.text, f"{url}.html")
         raise Exception()
 
     for price in prices:
@@ -38,6 +48,7 @@ def get_zestimate(address: str):
                 return zestimate
 
     log.warning('Zestimate not found after checking potential parent elements')
+    save_html(response.text, f"{url}.html")
     raise Exception()
 
 
