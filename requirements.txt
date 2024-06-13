@@ -1,5 +1,0 @@
-pandas
-pymysql
-selenium
-bs4
-requests

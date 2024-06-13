@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
-import pymysql
 from pymysql.err import MySQLError
 from setup import log, MySQLConnection
 
@@ -40,6 +39,21 @@ def get_auctions(
     except MySQLError as e:
         log.error("Error while querying MySQL", e)
         raise HTTPException(status_code=500, detail="Error while querying the database")
+
+@app.get('/auctions/count')
+def count_auctions():
+    query = "SELECT COUNT(*) AS total_count FROM auction_data"
+    
+    try:
+        with MySQLConnection() as cursor:
+            cursor.execute(query)
+            result = cursor.fetchone()
+            total_count = result['total_count']
+        
+        return {"total_count": total_count}
+    except MySQLError as e:
+        log.error("Error while counting auctions", e)
+        raise HTTPException(status_code=500, detail="Error while counting auctions")
 
 
 if __name__ == "__main__":
