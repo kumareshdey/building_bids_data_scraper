@@ -48,7 +48,8 @@ def count_auctions():
         with MySQLConnection() as cursor:
             cursor.execute(query)
             result = cursor.fetchone()
-            total_count = result['total_count']
+            print(result)
+            total_count = result[0]
         
         return {"total_count": total_count}
     except MySQLError as e:
