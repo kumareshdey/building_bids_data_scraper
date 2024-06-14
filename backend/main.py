@@ -5,7 +5,8 @@ from zillow_scraper import zillow_crawler
 from setup import MySQLConnection, log
 
 urls = ["https://www.bid4assets.com/chestercopasheriffsales",
-        "https://www.bid4assets.com/MontcoPASheriff"
+        "https://www.bid4assets.com/MontcoPASheriff",
+        "https://www.bid4assets.com/berkscountysheriffsales"
 ]
 
 

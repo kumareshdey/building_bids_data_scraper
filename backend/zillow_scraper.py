@@ -23,18 +23,18 @@ def get_zestimate(address: str):
     
     response = proxied_request(url)
     if response.status_code != 200:
-        log.error(f'Failed to retrieve the page. Status code: {response.status_code}')
+        log.error(f'Failed to retrieve the page. Status code: {response.status_code}. Waiting for 30 seconds')
+        time.sleep(30)
         raise Exception()
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    potential_prices = soup.find_all(string=lambda text: "Zestimate" in text)
-    prices = []
-    for element in potential_prices:
-        parent = element.parent
-        if parent.find('sup') and '®' in parent.find('sup').text:
-            prices.append(parent)
-    if not prices:
-        prices: List[BeautifulSoup] = soup.find_all(string="Zestimate")
+    price_element = soup.find('span', {'data-testid': 'price'})
+    if price_element:
+        log.info(f"Found direct zestimate: {price_element.text}")
+        price = clean_monetary_string(price_element.text)
+        if price:
+            return price
+    prices: List[BeautifulSoup] = soup.find_all(string="Zestimate")
     if not prices:
         prices = soup.find_all(string='Est. ')
 
