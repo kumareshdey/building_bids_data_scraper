@@ -27,7 +27,14 @@ def get_zestimate(address: str):
         raise Exception()
 
     soup = BeautifulSoup(response.text, 'html.parser')
-    prices: List[BeautifulSoup] = soup.find_all(string="Zestimate")
+    potential_prices = soup.find_all(string=lambda text: "Zestimate" in text)
+    prices = []
+    for element in potential_prices:
+        parent = element.parent
+        if parent.find('sup') and '®' in parent.find('sup').text:
+            prices.append(parent)
+    if not prices:
+        prices: List[BeautifulSoup] = soup.find_all(string="Zestimate")
     if not prices:
         prices = soup.find_all(string='Est. ')
 
