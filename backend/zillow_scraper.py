@@ -61,7 +61,6 @@ def get_zestimate(address: str):
 
 def update_database(row):
     try:
-        log.info(f"Updating database {row}")
         with MySQLConnection() as cursor:
             update_query = """
             UPDATE auction_data
