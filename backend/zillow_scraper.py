@@ -33,7 +33,7 @@ def get_zestimate(address: str):
         log.info(f"Found direct zestimate: {price_element.text}")
         price = clean_monetary_string(price_element.text)
         if price:
-            return price
+            return price_element.text
     prices: List[BeautifulSoup] = soup.find_all(string="Zestimate")
     if not prices:
         prices = soup.find_all(string='Est. ')
@@ -61,6 +61,7 @@ def get_zestimate(address: str):
 
 def update_database(row):
     try:
+        log.info(f"Updating database {row}")
         with MySQLConnection() as cursor:
             update_query = """
             UPDATE auction_data
