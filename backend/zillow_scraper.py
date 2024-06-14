@@ -48,6 +48,9 @@ def get_zestimate(address: str):
         for i in range(3):
             parent = parent.find_parent()
             parent_text = parent.__str__()
+            log.info(parent_text)
+            if 'rent' in parent_text.lower():
+                return None
             match = re.search(r'\$\d[\d,]*', parent_text)
             if match:
                 zestimate = match.group()
