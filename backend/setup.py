@@ -136,10 +136,14 @@ log = configure_get_log()
 
 def clean_monetary_string(value_str):
     try:
-        cleaned_str = re.sub(r'[^\d.]', '', value_str)
-        if not cleaned_str:
+        # Updated regex pattern to correctly extract the number after the dollar sign
+        match = re.search(r'\$([\d,]+\.?\d*)', value_str)
+        if match:
+            # Remove commas and convert to float
+            cleaned_str = match.group(1).replace(',', '')
+            return float(cleaned_str)
+        else:
             return None
-        return float(cleaned_str)
     except Exception as e:
         log.error(f"Error cleaning monetary string: {e}. value = {value_str}")
         return None
