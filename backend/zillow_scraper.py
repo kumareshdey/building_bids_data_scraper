@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from setup import MySQLConnection, clean_monetary_string, proxied_request, log, retry
 
 def save_html(content, file_name):
-    file_path = os.path.join('html', file_name)
+    file_path = os.path.join('html_pages', file_name)
     try:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(content)
