@@ -67,7 +67,9 @@ def update_database(row):
         with MySQLConnection() as cursor:
             update_query = """
             UPDATE auction_data
-            SET zestimate = %s, v_o = %s
+            SET 
+                zestimate = IF(zestimate IS NULL, %s, zestimate), 
+                v_o = IF(v_o IS NULL, %s, v_o)
             WHERE auction_id = %s;
             """
             cursor.execute(update_query, (row["zestimate"], row["v_o"], row["auction_id"]))

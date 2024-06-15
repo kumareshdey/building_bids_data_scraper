@@ -14,7 +14,7 @@ def save_bids_data(df):
     log.info("Saving data to the database.")
     with MySQLConnection() as cursor:
         insert_query = """
-            INSERT INTO auction_data (auction_id, address, current_bid, debt, county, city, state, date)
+            INSERT IGNORE INTO auction_data (auction_id, address, current_bid, debt, county, city, state, date)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
         """
 
