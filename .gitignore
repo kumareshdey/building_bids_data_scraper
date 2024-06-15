@@ -3,3 +3,4 @@
 credential*
 test*
 *.html
+*venv*

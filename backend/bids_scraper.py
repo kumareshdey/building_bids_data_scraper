@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import re
 import time
 
 from bs4 import BeautifulSoup
@@ -11,19 +12,26 @@ import pandas as pd
 import numpy as np
 
 
+def extract_city_state(address):
+    # Regular expression to match the city and state at the end of the address
+    pattern = r'([^,]+),?\s+([A-Za-z\s]+)\s+([A-Z]{2})\s+\d{5}$'
+    
+    match = re.search(pattern, address.strip())
+    if match:
+        city = match.group(2).strip().title()
+        state = match.group(3)
+        return city, state
+    else:
+        return None, None
+
 def fetch_existing_auction_ids():
-    log.info("Fetching existing auction IDs from the database within the last 24 hours.")
+    log.info("Fetching existing auction IDs from the database.")
     with MySQLConnection() as cursor:
-        # Calculate the datetime 24 hours ago
-        last_24_hours = datetime.now() - timedelta(hours=24)
-        last_24_hours_str = last_24_hours.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # Query to select auction IDs within the last 24 hours
-        query = "SELECT auction_id FROM auction_data WHERE date >= %s"
-        cursor.execute(query, (last_24_hours_str,))
+        query = "SELECT auction_id FROM auction_data"
+        cursor.execute(query)
         
         result = cursor.fetchall()
-        log.info(f"Fetched {len(result)} auction IDs within the last 24 hours.")
+        log.info(f"Fetched {len(result)} auction IDs.")
         return {row[0] for row in result}
 
 @retry(max_retry_count=1, interval_sec=5)
@@ -91,8 +99,7 @@ def fetch_bids_data(url):
                 current_bid = cols[curremt_bid_index].text.strip()
                 debt, county = fetch_other_values(auction_id)
                 current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                address_split = address.split(' ')
-                city, state = address_split[-3], address_split[-2]
+                city, state = extract_city_state(address)
                 data.append([auction_id, address, clean_monetary_string(current_bid), clean_monetary_string(debt), county, city, state, current_date])
             log.info(f"Rows length after this page {len(data)}")
             if stop_scraping:

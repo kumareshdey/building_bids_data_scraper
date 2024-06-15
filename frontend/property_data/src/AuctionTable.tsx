@@ -35,7 +35,7 @@ const fetchData = async (
   sortOrder: string
 ) => {
   const response = await fetch(
-    `http://54.167.54.88/auctions?page=${page}&pageSize=${pageSize}&sortField=${sortField}&sortOrder=${sortOrder}`,
+    `https://54.167.54.88/auctions?page=${page}&pageSize=${pageSize}&sortField=${sortField}&sortOrder=${sortOrder}`,
     {
       headers: { accept: 'application/json' },
     }
@@ -72,6 +72,7 @@ interface HeadCell {
 }
 
 const headCells: readonly HeadCell[] = [
+  { id: 'date', numeric: false, disablePadding: true, label: 'Date' },
   { id: 'city', numeric: false, disablePadding: true, label: 'City' },
   { id: 'state', numeric: false, disablePadding: true, label: 'State' },
   { id: 'county', numeric: false, disablePadding: true, label: 'County' },
@@ -134,7 +135,7 @@ export default function EnhancedTable() {
   const [count, setCount] = React.useState(15);
   const fetchCount = async () => {
     try {
-      const response = await fetch('http://54.167.54.88/auctions/count'); // Replace with your endpoint
+      const response = await fetch('https://54.167.54.88/auctions/count'); // Replace with your endpoint
       const data = await response.json();
       setCount(data.total_count);
     } catch (error) {
@@ -216,6 +217,7 @@ export default function EnhancedTable() {
                   tabIndex={-1}
                   key={row.auction_id}
                 >
+                  <TableCell>{row.date}</TableCell>
                   <TableCell>{row.city}</TableCell>
                   <TableCell>{row.state}</TableCell>
                   <TableCell>{row.county}</TableCell>
