@@ -127,17 +127,10 @@ def fetch_bids_data(url):
 
 def process_dataframe(df, county):
     current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Ensure 'address' column is lowercase for consistency
     df.columns = [col.lower() for col in df.columns]
-    
-    # Extract state from the 'address' column
-    states = df["address"].apply(lambda address: extract_city_state(address)[1])
-    
-    # Add the new columns to the DataFrame
     df['crawl_date'] = current_date
     df['city'] = county
-    df['state'] = states
+    df['state'] = "PA"
     df['county'] = county
     
     return df
