@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 import re
 import time
@@ -5,6 +6,7 @@ from typing import List
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+import pandas as pd
 
 from setup import MySQLConnection, clean_monetary_string, proxied_request, log, retry
 
@@ -16,16 +18,39 @@ def save_html(content, file_name):
     except Exception as e:
         pass
 
+def fetch_crawlable_data():
+    log.info("Fetching crawlable data from the database.")
+    with MySQLConnection() as cursor:
+        time_24_hours_ago = datetime.now() - timedelta(days=1)
+        select_query = """
+            SELECT * FROM auction_data
+            WHERE (zestimate IS NULL OR zestimate = '')
+            AND crawl_date >= %s;
+        """
+        
+        try:
+            cursor.execute(select_query, (time_24_hours_ago,))
+            results = cursor.fetchall()
+            df = pd.DataFrame(results)
+            return df
+        except Exception as e:
+            log.error(f"Error fetching data: {e}")
+            return pd.DataFrame()
+
 @retry(max_retry_count=2, interval_sec=5)
 def get_zestimate(address: str):
-    url = f'https://www.zillow.com/homes/{address.replace(" ", "-").replace("/", "-")}_rb'
-    log.info(f'Scraping Zestimate for address : {address}  Requesting URL: {url}')
-    
-    response = proxied_request(url)
-    if response.status_code != 200:
-        log.error(f'Failed to retrieve the page. Status code: {response.status_code}. Waiting for 30 seconds')
-        time.sleep(30)
-        raise Exception()
+    status, i = 500, 0
+    while status != 200:
+        i += 1
+        url = f'https://www.zillow.com/homes/{address.replace(" ", "-").replace("/", "-")}_rb'
+        log.info(f'Scraping Zestimate for address : {address}  Requesting URL: {url}')
+        
+        response = proxied_request(url)
+        if response.status_code != 200:
+            log.error(f'{i} times. || Failed to retrieve the page. Status code: {response.status_code}. Retrying in 30 seconds.')
+            time.sleep(30)
+        else:
+            status = 200
 
     soup = BeautifulSoup(response.text, 'html.parser')
     price_element = soup.find('span', {'data-testid': 'price'})
@@ -40,7 +65,6 @@ def get_zestimate(address: str):
 
     if not prices:
         log.error('Neither "Zestimate" nor "Est. " found in the HTML content')
-        save_html(response.text, f"""{address.replace(" ", "-").replace("/", "-")}.html""")
         raise Exception()
 
     for price in prices:
@@ -58,7 +82,6 @@ def get_zestimate(address: str):
                 return zestimate
 
     log.warning('Zestimate not found after checking potential parent elements')
-    save_html(response.text, f"""{address.replace(" ", "-").replace("/", "-")}.html""")
     raise Exception()
 
 
@@ -77,7 +100,8 @@ def update_database(row):
         log.error(f"Error updating database: {e}")
 
 
-def zillow_crawler(df):
+def zillow_crawler():
+    df = fetch_crawlable_data()
     for _, row in df.iterrows():
         zestimate = get_zestimate(row['address'])
         zestimate = clean_monetary_string(zestimate)

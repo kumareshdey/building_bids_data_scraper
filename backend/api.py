@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 from pymysql.err import MySQLError
 from setup import log, MySQLConnection
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -19,14 +20,43 @@ def get_auctions(
     page: int = Query(1, ge=1),
     pageSize: int = Query(10, ge=1),
     sortField: str = Query('auction_id'),
-    sortOrder: str = Query('ASC')
+    sortOrder: str = Query('ASC'),
+    search: Optional[str] = Query(None)
 ):
     offset = (page - 1) * pageSize
-    query = f"SELECT * FROM auction_data ORDER BY {sortField} {sortOrder} LIMIT %s, %s"
+    
+    # Base query to fetch data
+    query = f"""
+        SELECT * FROM auction_data 
+        WHERE crawl_date >= %s
+    """
+    
+    # Parameters for SQL query
+    params = [datetime.now() - timedelta(hours=24)]
+    
+    # If there's a search term, add search conditions
+    if search:
+        # Columns to search through
+        search_columns = [
+            'auction_id', 'bid', 'bid_open_date', 'bid_closing_date',
+            'debt', 'address', 'crawl_date', 'city', 'state', 'county', 'remark', 'v_o', 'zestimate'
+        ]
+        
+        # Build the WHERE clause for search (case insensitive)
+        where_clauses = []
+        for column in search_columns:
+            where_clauses.append(f"LOWER({column}) LIKE %s")
+            params.append(f"%{search.lower()}%")
+        
+        query += " AND (" + " OR ".join(where_clauses) + ")"
+
+    # Add ORDER BY and LIMIT clauses
+    query += f" ORDER BY {sortField} {sortOrder} LIMIT %s, %s"
+    params.extend([offset, pageSize])
 
     try:
         with MySQLConnection() as cursor:
-            cursor.execute(query, (offset, pageSize))
+            cursor.execute(query, params)
             results = cursor.fetchall()
             
             # Column names from the table
@@ -34,6 +64,11 @@ def get_auctions(
             
             # Convert tuples to dictionaries
             result_dicts = [dict(zip(column_names, row)) for row in results]
+            
+            # Format dates to 'DD/MM/YYYY'
+            for result in result_dicts:
+                if 'bid_open_date' in result:
+                    result['bid_open_date'] = result['bid_open_date'].strftime('%d/%m/%Y')
 
         return result_dicts
     except MySQLError as e:
@@ -41,21 +76,39 @@ def get_auctions(
         raise HTTPException(status_code=500, detail="Error while querying the database")
 
 @app.get('/auctions/count')
-def count_auctions():
-    query = "SELECT COUNT(*) AS total_count FROM auction_data"
+def count_auctions(search: Optional[str] = Query(None)):
+    # Base query to count data
+    query = "SELECT COUNT(*) AS total_count FROM auction_data WHERE crawl_date >= %s AND bid_closing_date>=%s"
     
+    # Parameters for SQL query
+    params = [datetime.now() - timedelta(hours=24), datetime.now() ]
+    
+    # If there's a search term, add search conditions
+    if search:
+        # Columns to search through
+        search_columns = [
+            'auction_id', 'bid', 'bid_open_date', 'bid_closing_date',
+            'debt', 'address', 'crawl_date', 'city', 'state', 'county', 'remark', 'v_o', 'zestimate'
+        ]
+        
+        # Build the WHERE clause for search (case insensitive)
+        where_clauses = []
+        for column in search_columns:
+            where_clauses.append(f"LOWER({column}) LIKE %s")
+            params.append(f"%{search.lower()}%")
+        
+        query += " AND (" + " OR ".join(where_clauses) + ")"
+
     try:
         with MySQLConnection() as cursor:
-            cursor.execute(query)
+            cursor.execute(query, params)
             result = cursor.fetchone()
-            print(result)
-            total_count = result[0]
+            total_count = result['total_count']
         
         return {"total_count": total_count}
     except MySQLError as e:
         log.error("Error while counting auctions", e)
         raise HTTPException(status_code=500, detail="Error while counting auctions")
-
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
+import io
+import os
 import re
 import time
-
+from credentials import BIDS_USERNAME, BIDS_PASSWORD, DOWNLOAD_PATH
 from bs4 import BeautifulSoup
-from setup import MySQLConnection, clean_monetary_string, get_driver, log, proxied_request, retry
+from setup import MySQLConnection, clean_monetary_string, get_driver, get_remark, log, proxied_request, retry, url_to_col_name, url_to_county
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -122,3 +124,94 @@ def fetch_bids_data(url):
     log.info(f"Scraped {len(data)} rows of data.")
     return page_data
 
+
+def process_dataframe(df, county):
+    current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Ensure 'address' column is lowercase for consistency
+    df.columns = [col.lower() for col in df.columns]
+    
+    # Extract state from the 'address' column
+    states = df["address"].apply(lambda address: extract_city_state(address)[1])
+    
+    # Add the new columns to the DataFrame
+    df['crawl_date'] = current_date
+    df['city'] = county
+    df['state'] = states
+    df['county'] = county
+    
+    return df
+
+def convert_date_format(date_str):
+    try:
+        date_obj = datetime.strptime(date_str, "%B %d, %Y")
+        return date_obj.strftime("%Y%m%d")
+    except:
+        return None
+
+
+@retry(max_retry_count=10, interval_sec=10)
+def login(driver):
+    log.info("Logging in")
+    driver.get('https://www.bid4assets.com/myaccount/login?returnUrl=%2Fmyb4a')
+    email_input = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "Username"))
+    )
+    email_input.send_keys(BIDS_USERNAME)
+    pass_input = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "Password"))
+    )
+    pass_input.send_keys(BIDS_PASSWORD)
+    login_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, "bttnLoginSubmit"))
+    )
+    time.sleep(1)
+    login_button.click()
+    time.sleep(5)
+
+@retry(max_retry_count=3, interval_sec=10)
+def scrape_bids_data(raw_url):
+    county = url_to_county(raw_url)
+    url = raw_url+'/propertylistdownload'
+    log.info(f"Starting to scrape data from {url}.")
+    with get_driver() as driver:
+        login(driver)
+        driver.get(url)
+        time.sleep(5)
+        all_dfs = []
+        dates_raw = driver.find_element(By.ID, "SelectedSaleDateId")
+        options = dates_raw.find_elements(By.TAG_NAME, "option")
+        dates = [date.text for date in options]
+        dates = [convert_date_format(date.strip()) for date in dates]
+        for date in dates:
+            if date:
+                download_page_url = url + f'?salesdate={date}'
+                log.info(f"Downloading file from {download_page_url}")
+                driver.get(download_page_url)
+                time.sleep(5)
+                download_button = driver.find_element(By.ID, "bttnDownload")
+                download_button.click()
+                log.info('File downloaded.')
+                time.sleep(10)
+                downloaded_files = os.listdir(DOWNLOAD_PATH)
+                downloaded_files = sorted(downloaded_files, key=lambda x: os.path.getmtime(os.path.join(DOWNLOAD_PATH, x)), reverse=True)
+                for file in downloaded_files:
+                    if date in file and county.lower()[:4] in file.lower():
+                        log.info(f"Found downloaded file: {file}")
+                        df = pd.read_excel(os.path.join(DOWNLOAD_PATH, file), skiprows=2)
+                        cols = url_to_col_name(raw_url)
+                        df = df[[key for key, _ in cols.items()]]
+                        df.rename(columns=cols, inplace=True)
+                        df = process_dataframe(df, county)
+                        df['remark'] = get_remark(raw_url)
+                        all_dfs.append(df)
+                        break
+        if all_dfs:
+            final_df = pd.concat(all_dfs, ignore_index=True)
+            final_df['bid_open_date'] = pd.to_datetime(final_df['bid_open_date'], format='%m/%d/%Y %I:%M:%S %p')
+            final_df['bid_closing_date'] = pd.to_datetime(final_df['bid_closing_date'], format='%m/%d/%Y %I:%M:%S %p')
+            final_df['bid_open_date'] = final_df['bid_open_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+            final_df['bid_closing_date'] = final_df['bid_closing_date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+            final_df = final_df.replace({np.nan: None})
+            log.info("Data scraping and merging completed successfully.")
+            return final_df

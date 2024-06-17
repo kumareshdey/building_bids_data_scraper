@@ -22,8 +22,8 @@ interface Data {
   county: string;
   city: string;
   state: string;
-  tax_liability: string;
-  date: string;
+  remark: string;
+  bid_open_date: string;
   zestimate: string;
   v_o: string;
 }
@@ -32,14 +32,16 @@ const fetchData = async (
   page: number,
   pageSize: number,
   sortField: string,
-  sortOrder: string
+  sortOrder: string,
+  search: string | null
 ) => {
-  const response = await fetch(
-    `https://54.167.54.88/auctions?page=${page}&pageSize=${pageSize}&sortField=${sortField}&sortOrder=${sortOrder}`,
-    {
-      headers: { accept: 'application/json' },
-    }
-  );
+  let url = `https://aucqljn2n8.execute-api.us-east-1.amazonaws.com/auctions?page=${page}&pageSize=${pageSize}&sortField=${sortField}&sortOrder=${sortOrder}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
+  const response = await fetch(url, {
+    headers: { accept: 'application/json' },
+  });
   return response.json();
 };
 
@@ -72,16 +74,16 @@ interface HeadCell {
 }
 
 const headCells: readonly HeadCell[] = [
-  { id: 'date', numeric: false, disablePadding: true, label: 'Date' },
+  { id: 'bid_open_date', numeric: false, disablePadding: true, label: 'Bid Open Date' },
   { id: 'city', numeric: false, disablePadding: true, label: 'City' },
   { id: 'state', numeric: false, disablePadding: true, label: 'State' },
   { id: 'county', numeric: false, disablePadding: true, label: 'County' },
   { id: 'address', numeric: false, disablePadding: true, label: 'Property Address' },
   { id: 'zestimate', numeric: false, disablePadding: true, label: 'Zestimate' },
   { id: 'debt', numeric: false, disablePadding: true, label: 'Debt' },
-  { id: 'tax_liability', numeric: false, disablePadding: true, label: 'Tax Liability' },
   { id: 'current_bid', numeric: false, disablePadding: true, label: 'Current Bid' },
   { id: 'v_o', numeric: false, disablePadding: true, label: 'V/O (Value/Owed)' },
+  { id: 'remark', numeric: false, disablePadding: true, label: 'Remark' },
 ];
 
 interface EnhancedTableProps {
@@ -133,22 +135,25 @@ export default function EnhancedTable() {
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
   const [rows, setRows] = React.useState<Data[]>([]);
   const [count, setCount] = React.useState(15);
+  const [search, setSearch] = React.useState<string | null>(null);
+
   const fetchCount = async () => {
     try {
-      const response = await fetch('https://54.167.54.88/auctions/count'); // Replace with your endpoint
+      const response = await fetch(`https://aucqljn2n8.execute-api.us-east-1.amazonaws.com/auctions/count?search=${encodeURIComponent(search ?? '')}`);
       const data = await response.json();
       setCount(data.total_count);
     } catch (error) {
       console.error('Error fetching count:', error);
     }
   };
+
   React.useEffect(() => {
     fetchCount();
-  }, []);
+  }, [search]);
 
   const fetchRows = async () => {
     try {
-      const data = await fetchData(page + 1, rowsPerPage, orderBy, order);
+      const data = await fetchData(page + 1, rowsPerPage, orderBy, order, search);
       setRows(data);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -157,7 +162,7 @@ export default function EnhancedTable() {
 
   React.useEffect(() => {
     fetchRows();
-  }, [page, rowsPerPage, order, orderBy]);
+  }, [page, rowsPerPage, order, orderBy, search]);
 
   const handleRequestSort = (
     event: React.MouseEvent<unknown>,
@@ -179,6 +184,10 @@ export default function EnhancedTable() {
     setPage(0);
   };
 
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(event.target.value);
+  };
+
   return (
     <Box sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
@@ -196,12 +205,16 @@ export default function EnhancedTable() {
           >
             Property auction data
           </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+            <Typography variant="h6" color="inherit" noWrap>
+              Search:
+            </Typography>
+            <input type="text" onChange={handleSearch} style={{ marginLeft: 8 }} />
+          </Box>
         </Toolbar>
         <TableContainer>
           <Table
-            sx={{ minWidth: 750, "& .MuiButtonBase-root": {
-              marginLeft: "17px"
-            } }}
+            sx={{ minWidth: 750, "& .MuiButtonBase-root": { marginLeft: "17px" } }}
             aria-labelledby="tableTitle"
             size={'medium'}
           >
@@ -217,16 +230,16 @@ export default function EnhancedTable() {
                   tabIndex={-1}
                   key={row.auction_id}
                 >
-                  <TableCell>{row.date}</TableCell>
+                  <TableCell>{row.bid_open_date}</TableCell>
                   <TableCell>{row.city}</TableCell>
                   <TableCell>{row.state}</TableCell>
                   <TableCell>{row.county}</TableCell>
                   <TableCell>{row.address}</TableCell>
                   <TableCell>{row.zestimate}</TableCell>
                   <TableCell>{row.debt}</TableCell>
-                  <TableCell>{row.tax_liability}</TableCell>
                   <TableCell>{row.current_bid}</TableCell>
                   <TableCell>{row.v_o}</TableCell>
+                  <TableCell>{row.remark}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
