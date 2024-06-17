@@ -81,20 +81,15 @@ def get_auctions(
 @app.get('/auctions/count')
 def count_auctions(search: Optional[str] = Query(None)):
     # Base query to count data
-    query = "SELECT COUNT(*) AS total_count FROM auction_data WHERE crawl_date >= %s AND bid_closing_date>=%s"
-    
-    # Parameters for SQL query
-    params = [datetime.now() - timedelta(hours=24), datetime.now() ]
-    
-    # If there's a search term, add search conditions
+    query = "SELECT COUNT(*) AS total_count FROM auction_data WHERE crawl_date >= %s AND bid_closing_date >= %s"
+
+    params = [datetime.now() - timedelta(hours=24), datetime.now()]
+
     if search:
-        # Columns to search through
         search_columns = [
             'auction_id', 'bid', 'bid_open_date', 'bid_closing_date',
             'debt', 'address', 'crawl_date', 'city', 'state', 'county', 'remark', 'v_o', 'zestimate'
         ]
-        
-        # Build the WHERE clause for search (case insensitive)
         where_clauses = []
         for column in search_columns:
             where_clauses.append(f"LOWER({column}) LIKE %s")
@@ -106,12 +101,18 @@ def count_auctions(search: Optional[str] = Query(None)):
         with MySQLConnection() as cursor:
             cursor.execute(query, params)
             result = cursor.fetchone()
-            total_count = result['total_count']
+            
+            if result:
+                total_count = result[0]  # Access the count by index
+            else:
+                total_count = 0
         
         return {"total_count": total_count}
-    except MySQLError as e:
-        log.error("Error while counting auctions", e)
+    except:
+        log.error("Error while counting auctions")
         raise HTTPException(status_code=500, detail="Error while counting auctions")
+
+
     
 @app.delete('/maya')
 def destroy(psst: str = Query(...)):
