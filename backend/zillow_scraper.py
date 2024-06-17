@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 import os
 import re
 import time
@@ -31,7 +32,13 @@ def fetch_crawlable_data():
         try:
             cursor.execute(select_query, (time_24_hours_ago,))
             results = cursor.fetchall()
-            df = pd.DataFrame(results)
+            column_names = [desc[0] for desc in cursor.description]
+            df = pd.DataFrame(results, columns=column_names)
+            for col in df.columns:
+                if df[col].dtype == 'object' and isinstance(df[col].iloc[0], Decimal):
+                    df[col] = df[col].astype(float)
+            
+            log.info(f"Found {len(df)} entries")
             return df
         except Exception as e:
             log.error(f"Error fetching data: {e}")

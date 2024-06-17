@@ -34,7 +34,7 @@ def delete_files(directory, file_pattern=None):
         log.error(f"Error deleting files: {e}")
 
 def save_bids_data(df):
-    log.info("Saving data to the database.")
+    log.info(f"Saving data to the database. Total entries {len(df)}")
     with MySQLConnection() as cursor:
         insert_query = """
             INSERT INTO auction_data (
@@ -58,7 +58,7 @@ def save_bids_data(df):
             try:
                 cursor.execute(insert_query, (
                     row['id'], row['bid'], row['bid_open_date'], row['bid_closing_date'], 
-                    row['debt'], row['address'], row['crawl_date'], row['city'], 
+                    row.get('debt'), row['address'], row['crawl_date'], row['city'], 
                     row['state'], row['county'], row['remark']
                 ))
             except Exception as e:
@@ -75,5 +75,5 @@ if __name__ == "__main__":
                 save_bids_data(df)
         except Exception as e:
             log.error(f"An error occurred while processing {url}: {e}")
-    zillow_crawler(df)
+    zillow_crawler()
     delete_files(DOWNLOAD_PATH, '.xlsx')  # delete files after all urls have been processed
