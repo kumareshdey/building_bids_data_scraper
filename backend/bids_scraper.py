@@ -190,8 +190,8 @@ def scrape_bids_data(raw_url):
                 downloaded_files = sorted(downloaded_files, key=lambda x: os.path.getmtime(os.path.join(DOWNLOAD_PATH, x)), reverse=True)
                 for file in downloaded_files:
                     if date in file and county.lower()[:4] in file.lower():
-                        log.info(f"Found downloaded file: {file}")
                         df = pd.read_excel(os.path.join(DOWNLOAD_PATH, file), skiprows=2)
+                        log.info(f"Found downloaded file: {file}. Total rows: {len(df)}")
                         cols = url_to_col_name(raw_url)
                         df = df[[key for key, _ in cols.items()]]
                         df.rename(columns=cols, inplace=True)
