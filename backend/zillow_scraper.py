@@ -26,7 +26,7 @@ def fetch_crawlable_data():
         select_query = """
             SELECT * FROM auction_data
             WHERE (zestimate IS NULL OR zestimate = '')
-            AND crawl_date >= %s;
+            AND created_at >= %s;
         """
         
         try:

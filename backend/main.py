@@ -1,4 +1,5 @@
 
+from datetime import datetime
 import os
 import pandas as pd
 from bids_scraper import fetch_bids_data, scrape_bids_data
@@ -39,8 +40,8 @@ def save_bids_data(df):
         insert_query = """
             INSERT INTO auction_data (
                 auction_id, bid, bid_open_date, bid_closing_date, debt, address, 
-                crawl_date, city, state, county, remark
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                crawl_date, city, state, county, remark, created_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 bid = VALUES(bid),
                 bid_open_date = VALUES(bid_open_date),
@@ -51,7 +52,8 @@ def save_bids_data(df):
                 city = VALUES(city),
                 state = VALUES(state),
                 county = VALUES(county),
-                remark = VALUES(remark);
+                remark = VALUES(remark),
+                created_at = COALESCE(created_at, VALUES(created_at));  -- Keep the old value if exists, otherwise use the new value
         """
 
         for _, row in df.iterrows():
@@ -59,14 +61,12 @@ def save_bids_data(df):
                 cursor.execute(insert_query, (
                     row['id'], row['bid'], row['bid_open_date'], row['bid_closing_date'], 
                     row.get('debt'), row['address'], row['crawl_date'], row['city'], 
-                    row['state'], row['county'], row['remark']
+                    row['state'], row['county'], row['remark'], datetime.now()
                 ))
             except Exception as e:
                 log.error(f"Error inserting data: {e}")
-
-
     log.info("Data saving complete.")
-    return True
+
 if __name__ == "__main__":
     for url in urls:
         try:
