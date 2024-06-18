@@ -22,7 +22,7 @@ def save_html(content, file_name):
 def fetch_crawlable_data():
     log.info("Fetching crawlable data from the database.")
     with MySQLConnection() as cursor:
-        time_24_hours_ago = datetime.now() - timedelta(days=1)
+        time_24_hours_ago = datetime.now() - timedelta(hours=10)
         select_query = """
             SELECT * FROM auction_data
             WHERE (zestimate IS NULL OR zestimate = '')
