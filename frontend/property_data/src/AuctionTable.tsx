@@ -17,7 +17,7 @@ import { visuallyHidden } from '@mui/utils';
 interface Data {
   auction_id: number;
   address: string;
-  current_bid: string;
+  bid: string;
   debt: string;
   county: string;
   city: string;
@@ -81,7 +81,7 @@ const headCells: readonly HeadCell[] = [
   { id: 'address', numeric: false, disablePadding: true, label: 'Property Address' },
   { id: 'zestimate', numeric: false, disablePadding: true, label: 'Zestimate' },
   { id: 'debt', numeric: false, disablePadding: true, label: 'Debt' },
-  { id: 'current_bid', numeric: false, disablePadding: true, label: 'Current Bid' },
+  { id: 'bid', numeric: false, disablePadding: true, label: 'Current Bid' },
   { id: 'v_o', numeric: false, disablePadding: true, label: 'V/O (Value/Owed)' },
   { id: 'remark', numeric: false, disablePadding: true, label: 'Remark' },
 ];
@@ -237,7 +237,7 @@ export default function EnhancedTable() {
                   <TableCell>{row.address}</TableCell>
                   <TableCell>{row.zestimate}</TableCell>
                   <TableCell>{row.debt}</TableCell>
-                  <TableCell>{row.current_bid}</TableCell>
+                  <TableCell>{row.bid}</TableCell>
                   <TableCell>{row.v_o}</TableCell>
                   <TableCell>{row.remark}</TableCell>
                 </TableRow>

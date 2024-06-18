@@ -4,3 +4,4 @@ credential*
 test*
 *.html
 *venv*
+*.xlsx
