@@ -172,33 +172,33 @@ def scrape_bids_data(raw_url):
         driver.get(url)
         time.sleep(5)
         all_dfs = []
-        dates_raw = driver.find_element(By.ID, "SelectedSaleDateId")
-        options = dates_raw.find_elements(By.TAG_NAME, "option")
-        dates = [date.text for date in options]
-        dates = [convert_date_format(date.strip()) for date in dates]
-        for date in dates:
-            if date:
-                download_page_url = url + f'?salesdate={date}'
-                log.info(f"Downloading file from {download_page_url}")
-                driver.get(download_page_url)
-                time.sleep(5)
-                download_button = driver.find_element(By.ID, "bttnDownload")
-                download_button.click()
-                log.info('File downloaded.')
-                time.sleep(10)
-                downloaded_files = os.listdir(DOWNLOAD_PATH)
-                downloaded_files = sorted(downloaded_files, key=lambda x: os.path.getmtime(os.path.join(DOWNLOAD_PATH, x)), reverse=True)
-                for file in downloaded_files:
-                    if date in file and county.lower()[:4] in file.lower():
-                        df = pd.read_excel(os.path.join(DOWNLOAD_PATH, file), skiprows=2)
-                        log.info(f"Found downloaded file: {file}. Total rows: {len(df)}")
-                        cols = url_to_col_name(raw_url)
-                        df = df[[key for key, _ in cols.items()]]
-                        df.rename(columns=cols, inplace=True)
-                        df = process_dataframe(df, county)
-                        df['remark'] = get_remark(raw_url)
-                        all_dfs.append(df)
-                        break
+        # dates_raw = driver.find_element(By.ID, "SelectedSaleDateId")
+        # options = dates_raw.find_elements(By.TAG_NAME, "option")
+        # dates = [date.text for date in options]
+        # dates = [convert_date_format(date.strip()) for date in dates]
+        # for date in dates:
+        #     if date:
+        #         download_page_url = url + f'?salesdate={date}'
+        #         log.info(f"Downloading file from {download_page_url}")
+        #         driver.get(download_page_url)
+        #         time.sleep(5)
+        download_button = driver.find_element(By.ID, "bttnDownload")
+        download_button.click()
+        log.info('File downloaded.')
+        time.sleep(10)
+        downloaded_files = os.listdir(DOWNLOAD_PATH)
+        downloaded_files = sorted(downloaded_files, key=lambda x: os.path.getmtime(os.path.join(DOWNLOAD_PATH, x)), reverse=True)
+        for file in downloaded_files:
+            if county.lower()[:4] in file.lower():
+                df = pd.read_excel(os.path.join(DOWNLOAD_PATH, file), skiprows=2)
+                log.info(f"Found downloaded file: {file}. Total rows: {len(df)}")
+                cols = url_to_col_name(raw_url)
+                df = df[[key for key, _ in cols.items()]]
+                df.rename(columns=cols, inplace=True)
+                df = process_dataframe(df, county)
+                df['remark'] = get_remark(raw_url)
+                all_dfs.append(df)
+                break
         if all_dfs:
             final_df = pd.concat(all_dfs, ignore_index=True)
             final_df['bid_open_date'] = pd.to_datetime(final_df['bid_open_date'], format='%m/%d/%Y %I:%M:%S %p')
