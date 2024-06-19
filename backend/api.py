@@ -8,7 +8,7 @@ from credentials import TARGET_PATH
 from setup import log, MySQLConnection
 from datetime import datetime, timedelta
 
-app = FastAPI()
+app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 
 app.add_middleware(
     CORSMiddleware,
