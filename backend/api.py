@@ -35,7 +35,7 @@ def get_auctions(
     """
     
     # Parameters for SQL query
-    params = [datetime.now() - timedelta(hours=12)]
+    params = [datetime.now() - timedelta(hours=20)]
     
     # If there's a search term, add search conditions
     if search:
@@ -83,7 +83,7 @@ def count_auctions(search: Optional[str] = Query(None)):
     # Base query to count data
     query = "SELECT COUNT(*) AS total_count FROM auction_data WHERE crawl_date >= %s AND bid_closing_date >= %s"
 
-    params = [datetime.now() - timedelta(hours=12), datetime.now()]
+    params = [datetime.now() - timedelta(hours=20), datetime.now()]
 
     if search:
         search_columns = [
